@@ -1,0 +1,251 @@
+---
+title: 'Assignment 1: Population Growth Models'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+library(ggplot2)
+library(tidyverse)
+library(reshape)
+
+
+###Discrete exponential growth function
+discrete.exp <- function(N0, r, timestep){
+  
+  p <- numeric(length = timestep)
+  p[1] <- N0
+  
+  for(i in 2:timestep){
+    Nt <- p[i - 1]
+    p[i] <- Nt * exp(r)
+    
+  }
+  
+  p <- as.data.frame(p) %>%
+    add_column(., Generations=1:timestep) %>%
+    setNames(., c("N", "Generations"))
+  
+return(p)
+  
+}
+
+###Logistic exponential growth function
+logistic.exp <- function(N0, r, timestep, K){
+
+  p <- numeric(length = timestep)
+  p[1] <- N0
+  
+  for(i in 2:timestep){
+    Nt <- p[i - 1]
+    p[i] <- Nt * exp(r * ((K-Nt)/K))
+    
+  }
+  
+  p <- as.data.frame(p) %>%
+    add_column(., Generations=1:timestep) %>%
+    setNames(., c("N", "Generations"))
+  
+  return(p)
+  
+}
+
+
+##Modified logistic exponential growth
+mod.logistic.exp <- function(N0, r, timestep, K, alph){
+  
+  ##create a blank matrix for data population 
+  p <- numeric(length = timestep)
+  p[1] <- N0
+  
+  for(i in 2:timestep){
+    Nt <- p[i - 1]
+    p[i] <- Nt * exp(r * (1 - (Nt/K)^alph))
+    
+  }
+  
+  p <- as.data.frame(p) %>%
+    add_column(., Generations=1:timestep) %>%
+    setNames(., c("N", "Generations"))
+  
+  return(p)
+  
+}
+
+
+##Plotting function to see data 
+plot.growth <- function(mydata, mytitle){
+  
+  p <- ggplot(mydata, aes(x=Generations, y=N)) + 
+    geom_line(color="red") +
+    xlab('Generations') +
+    ylab('Population (N)') +
+    theme_minimal() +
+    ggtitle(label = mytitle)
+  
+  print(p)
+  
+}
+
+plot.growth2 <- function(mydata, mytitle){
+  
+  p <- ggplot2::ggplot(mydata, aes(x=Generations, y=value, col=Group)) + 
+    geom_line() +
+    xlab('Generations') +
+    ylab('Population (N)') +
+    theme_minimal() +
+    ggtitle(label = mytitle)
+  
+  print(p)
+  
+}
+```
+
+In this exercise, you will model exponential and logistic population growth.
+
+###Exponential population growth (8 points):
+
+To model exponential population growth, we will use the following (discrete-time) equation:
+
+$$\large N_{t+1} = N_{t}e^r$$
+Where $N_{t}$ and $N_{t+1}$ are the population sizes at times $t$ and $t+1$ and $r$ is the intrinsic rate of increase. In R, the equation looks like ```p[i] <- Nt * exp(r)```.
+
+
+Start each model at $N_0=10$. Run the model for 25 time steps. Complete separate runs for each of the following $r$ values:
+
+1. $r=0.01$
+2. $r=0.1$
+3. $r=-0.1$
+4. $r=0.5$
+5. $r=1$
+
+
+This tab should contain three graphs ($N_t$ versus $t$): the first three populations (1-3) can be put in one graph, and the last two (4 and 5) on separate graphs. Your graphs should look like the following:
+
+```{r, echo=F, fig.width=7, fig.show = "hold", out.width = "33%"}
+dis.exp.growth <- discrete.exp(N0 = 10, r = 0.01, timestep = 25) %>%
+  setNames(., c("r = 0.01", "Generations"))
+dis.exp.growth1 <- discrete.exp(N0 = 10, r = 0.1, timestep = 25) %>%
+  setNames(., c("r = 0.1", "Generations"))
+dis.exp.growth2 <- discrete.exp(N0 = 10, r = -0.1, timestep = 25) %>%
+  setNames(., c("r = -0.1", "Generations"))
+
+df <- full_join(dis.exp.growth, dis.exp.growth1, by="Generations") %>%
+  full_join(dis.exp.growth2, by="Generations") %>%
+  melt(., id.vars="Generations") %>%
+  setNames(., c("Generations", "Group", "value"))
+
+plot.growth2(mydata = df, mytitle = "Discerete Exponential Growth: r = 0.01, 0.1, -0.1")
+
+dis.exp.growth3 <- discrete.exp(N0 = 10, r = 0.5, timestep = 25)
+dis.exp.growth4 <- discrete.exp(N0 = 10, r = 1, timestep = 25)
+
+
+plot.growth(mydata = dis.exp.growth3, mytitle = "Discrete Exponential Growth: r = 0.5")
+plot.growth(mydata = dis.exp.growth4, mytitle = "Discrete Exponential Growth: r = 1")
+```
+
+
+
+###Logistic population growth (8 points):
+
+For logistic population growth, we will be using the discrete form of the logistic equation:
+
+$$\large N_{t+1} = N_{t}e^{r(\frac{K - N_t}{K})}$$
+Where $N_t$ and $N_{t+1}$ are the population sizes at times $t$ and $t+1$, $r$ is the intrinsic rate of increase, and $K$ is the carrying capacity. In R, the equation looks like ```p[i] <- Nt * exp(r * ((K-Nt)/K))```.
+
+
+For the following exercises your carrying capacity will be [choose any number between 50 and 500]:
+
+
+$$\large K = $$
+
+Set $N_0$ to 20% of your $K$. For example, if your $K$ is 340, your $N_0$ would be 68. For each simulation, calculate $N_t$ over 100 timesteps, and graph $N_t$ versus $t$. In the legend of the graph, include the value of $r$ that you used. If the graph is a limit cycle, include the number of points in the title, and the $N$ values for each of the "boundaries" of the cycle in the figure.
+
+\pagebreak
+
+This tab should contain 6 graphs for each of the following $r$ values:
+
+1. $r=0.5$ 
+2. $r=1.5$ 
+3. $r=2.3$ 
+4. $r=2.6$ 
+5. $r=2.69$ 
+6. Chaos ($r=?$ Can you find out this value by yourself?)
+
+
+
+
+Your graphs should look like the following:
+```{r, echo=F, fig.width=7, fig.show = "hold", out.width = "33%"}
+log.growth <- logistic.exp(N0=10, r=0.05, timestep = 25, K=100)
+plot.growth(mydata = log.growth, mytitle = "Logistic Exponential Growth: r = 0.05")
+
+log.growth2 <- logistic.exp(N0=10, r=1.5, timestep = 25, K=100)
+plot.growth(mydata = log.growth2, mytitle = "Logistic Exponential Growth: r = 1.5")
+
+log.growth3 <- logistic.exp(N0=10, r=2.3, timestep = 25, K=100)
+plot.growth(mydata = log.growth3, mytitle = "Logistic Exponential Growth: r = 2.3")
+
+```
+
+```{r, echo=F, fig.width=7, fig.show = "hold", out.width = "33%"}
+log.growth4 <- logistic.exp(N0=10, r=2.6, timestep = 25, K=100)
+plot.growth(mydata = log.growth4, mytitle = "Logistic Exponential Growth: r = 2.6")
+
+log.growth5 <- logistic.exp(N0=10, r=2.69, timestep = 25, K=100)
+plot.growth(mydata = log.growth5, mytitle = "Logistic Exponential Growth: r = 2.69")
+
+log.growth6 <- logistic.exp(N0=10, r=3, timestep = 25, K=100)
+plot.growth(mydata = log.growth6, mytitle = "Logistic Exponential Growth: Chaos")
+```
+
+
+###Modifications to the logistic population growth model (8 points):
+
+The discrete form of the logisitic growth equation that we have used so far, $N_{t+1} = N_{t}e^{r(\frac{K - N_t}{K})}$, may not reflect the real population growth observed in nature. Ecologists these days use more refined versions by modifying the degree of density dependence, like this one:
+
+$$\large N_{t+1} = N_{t}e^{r(1 - [\frac{N_t}{K}]^\alpha)}$$
+
+Different sets of $\alpha$ and $r$ values will dampen or amplify population cycles. In R, the equation looks like ```p[i] <- Nt * exp(r * (1 - (Nt/K)^\alpha))```. For each simulation, calculate $N_t$ over 100 timesteps, and graph $N_t$ versus $t$. Use the $K$ value from the previous section and set $N_0$ to 20% of your $K$.
+
+This tab should contain 6 graphs, one for each of the following values:
+
+
+1. $r= 0.5, \alpha=0.5$
+2. $r= 1.5, \alpha=0.5$
+3. $r= 2.3, \alpha=0.5$
+4. $r= 0.5, \alpha=1.5$
+5. $r= 1.5, \alpha=1.5$
+6. $r= 2.3, \alpha=1.5$
+
+\pagebreak
+
+Your graphs should look like the following:
+
+```{r, echo=F, fig.width=7, fig.show = "hold", out.width = "33%"}
+
+mod.growth <- mod.logistic.exp(N0 = 10, r = 0.5, timestep = 25, K = 100, alph = 0.5)
+plot.growth(mydata = mod.growth, mytitle = "Modified Logistic Exponential Growth: r = 0.5, alpha = 0.5")
+
+mod.growth <- mod.logistic.exp(N0 = 10, r = 1.5, timestep = 25, K = 100, alph = 0.5)
+plot.growth(mydata = mod.growth, mytitle = "Modified Logistic Exponential Growth: r = 1.5, alpha = 0.5")
+
+mod.growth <- mod.logistic.exp(N0 = 10, r = 2.3, timestep = 25, K = 100, alph = 0.5)
+plot.growth(mydata = mod.growth, mytitle = "Modified Logistic Exponential Growth: r = 2.3, alpha = 0.5")
+
+```
+
+```{r, echo=F, fig.width=7, fig.show = "hold", out.width = "33%"}
+mod.growth <- mod.logistic.exp(N0 = 10, r = 0.5, timestep = 25, K = 100, alph = 1.5)
+plot.growth(mydata = mod.growth, mytitle = "Modified Logistic Exponential Growth: r = 0.5, alpha = 1.5")
+
+mod.growth <- mod.logistic.exp(N0 = 10, r = 1.5, timestep = 25, K = 100, alph = 1.5)
+plot.growth(mydata = mod.growth, mytitle = "Modified Logistic Exponential Growth: r = 1.5, alpha = 1.5")
+
+mod.growth <- mod.logistic.exp(N0 = 10, r = 2.3, timestep = 25, K = 100, alph = 1.5)
+plot.growth(mydata = mod.growth, mytitle = "Modified Logistic Exponential Growth, r = 2.3, alpha = 1.5")
+```
+

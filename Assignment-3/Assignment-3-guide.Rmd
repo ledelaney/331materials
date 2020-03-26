@@ -1,0 +1,224 @@
+---
+title: 'Assignment # 3: Multispecies Dynamics (Competition and Predation)'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache=FALSE)
+library(ggplot2)
+library(tidyverse)
+library(reshape)
+library(gridExtra)
+
+##Load functions for modeling and graphing###
+lot.vol.comp <- function(N01, N02, r1, r2, K1, K2, alph, bet, timestep){
+
+  p1 <- numeric(length = timestep)
+  p1[1] <- N01
+  
+  p2 <- numeric(length = timestep)
+  p2[1] <- N02
+  
+  for(i in 2:timestep){
+    Nt1 <- p1[i - 1]
+    Nt2 <- p2[i - 1]
+    p1[i] <- Nt1 * exp(r1*((K1 - Nt1 - alph * Nt2)/K1))
+    p2[i] <- Nt2 * exp(r2*((K2 - Nt2 - bet * Nt1)/K2))
+    
+  }
+  
+  p <- cbind(p1, p2) %>%
+    as.data.frame() %>%
+    setNames(., c("Speces 1", "Species 2")) %>%
+    tibble::add_column(., Generations = 1:timestep) %>%
+    reshape::melt(., id.vars="Generations") %>%
+    setNames(., c("Generations", "Group", "value"))
+  
+  return(p)
+  
+}
+
+pred.prey <- function(K=100, r=1, a=0.1, h=1, b=0.1, d, preypop=50, predpop=5, timestep=1000){
+  
+  pred <- numeric(length = timestep)
+  pred[1] <- predpop
+  
+  prey <- numeric(length = timestep)
+  prey[1] <- preypop
+  
+  for(i in 2:timestep){
+    
+    Npred <- pred[i - 1]
+    Nprey <- prey[i - 1]
+    
+    pred[i] <- Npred * exp((b*a*Nprey/(1+a*h*Nprey))-d)
+    prey[i] <- Nprey * exp(r*((K - Nprey)/K) - ((a * Npred)/(1+a*h*Nprey)))
+    
+  }
+  
+  p <- cbind(pred, prey) %>%
+    as.data.frame() %>%
+    setNames(., c("Predator", "Prey")) %>%
+    tibble::add_column(., Generations = 1:timestep) %>%
+    reshape::melt(., id.vars="Generations") %>%
+    setNames(., c("Generations", "Group", "value"))
+  
+  return(p)
+  
+}
+
+plot.growth2 <- function(mydata, mytitle){
+  
+  p <- ggplot2::ggplot(mydata, aes(x=Generations, y=value, col=Group)) + 
+    geom_line() +
+    xlab('Generations') +
+    ylab('Population (N)') +
+    theme_minimal() +
+    ggtitle(label = mytitle)
+  
+  print(p)
+  
+}
+
+```
+
+In this assignment, you will model multispecies population dynamics.
+
+###Part I: Competition
+
+For modeling interspecific competition, we will use the following discrete-time Lotka-Volterra competition equations:
+
+$$\large N_{1, t+1} = N_{1,t} e^{r1(\frac{K_{1} - N_{1,t} - \alpha N_{2,t}}{K_{1}})} $$
+$$\large N_{2, t+1} = N_{2,t} e^{r1(\frac{K_{2} - N_{2,t} - \beta N_{1,t}}{K_{2}})} $$
+
+In these equations, $N_{i,t}$ and $N_{i,t+1}$ are the population sizes of species **i** at time **t** and **t+1**. The parameter, $r_{i}$, is the intrinsic rate of increase of species **i**. The parameter, $K_{i}$, is the carrying capacity of species **i**. The terms $\alpha$ and $\beta$ are per capita competitive effects (competition coefficients) of species 2 on species 1, and species 1 on species 2, respectively. 
+
+In R, the equations will look something like:
+
+```{r, eval=FALSE, echo=TRUE}
+                    N1 = Nt1 * exp(r1*((K1 - Nt1 - alph * Nt2)/K1))
+                    N2 = Nt2 * exp(r2*((K2 - Nt2 - bet * Nt1)/K2))
+```
+
+The outcome of competition depends on the relative strengths of intraspecific versus interspecific competition. (Hint: what are the values of the competition coefficients for intraspecific competition?) You need to find combinations of $\alpha$ and $\beta$ that produce each of the four distinct outcomes of 2-species competition.
+
+You will need to start each combination of $\alpha$ and $\beta$ at two different initial population sizes to distinguish between alternate stable states and competitive exclusion. For the two initial conditions, use $N_{1,0} = 5$ & $N_{2,0} = 50$ and $N_{1,0} = 50$ & $N_{2,0} = 5$. Set $K_{1}$ and $K_{2}$ equal to your carrying capacity from Assignment 1. Pick a value for $r_1$ and $r_2$ that is between 0.5 and 1.
+
+#####Outcome 1: 
+```{r, echo=F, fig.width=10, fig.show = "hold", out.width = "50%"}
+
+comp1.1 <- lot.vol.comp(N01 = 5, N02 = 50, r1 = 0.6, r2 = 0.6, K1 = 100, K2 = 100, alph = 0.1, bet = 0.9, timestep = 100)
+comp1.2 <- lot.vol.comp(N01 = 50, N02 = 5, r1 = 0.6, r2 = 0.6, K1 = 100, K2 = 100, alph = 0.1, bet = 0.9, timestep = 100)
+
+plot.growth2(mydata = comp1.1, mytitle = "Species 1 Outcompetes Species 2")
+plot.growth2(mydata = comp1.2, mytitle = "Species 1 Outcompetes Species 2")
+
+
+```
+
+
+\pagebreak
+
+#####Outcome 2:
+```{r, echo=F, fig.width=10, fig.show = "hold", out.width = "50%"}
+
+comp2.1 <- lot.vol.comp(N01 = 50, N02 = 5, r1 = 0.6, r2 = 0.6, K1 = 100, K2 = 100, alph = 0.9, bet = 0.1, timestep = 100)
+comp2.2 <- lot.vol.comp(N01 = 5, N02 = 50, r1 = 0.6, r2 = 0.6, K1 = 100, K2 = 100, alph = 0.9, bet = 0.1, timestep = 100)
+
+plot.growth2(mydata = comp2.1, mytitle = "Species 2 Outcompetes Species 1")
+plot.growth2(mydata = comp2.2, mytitle = "Species 2 Outcompetes Species 1")
+
+```
+
+#####Outcome 3: 
+```{r, echo=F, fig.width=10, fig.show = "hold", out.width = "50%"}
+
+comp12 <- lot.vol.comp(N01 = 5, N02 = 50, r1 = 0.6, r2 = 0.6, K1 = 100, K2 = 100, alph = 0.3, bet = 0.2, timestep = 25)
+comp21 <- lot.vol.comp(N01 = 50, N02 = 5, r1 = 0.6, r2 = 0.6, K1 = 100, K2 = 100, alph = 0.3, bet = 0.2, timestep = 25)
+
+plot.growth2(mydata = comp12, mytitle = "Species 1 and Species 2 Coexist: 1")
+plot.growth2(mydata = comp21, mytitle = "Species 1 and Species 2 Coexist: 2")
+
+```
+
+#####Outcome 4:
+```{r, echo=F, fig.width=10, fig.show = "hold", out.width = "50%"}
+
+comp.alt1 <- lot.vol.comp(N01 = 5, N02 = 50, r1 = 0.6, r2 = 0.6, K1 = 100, K2 = 100, alph = 1.5, bet = 1.3, timestep = 25)
+comp.alt2 <- lot.vol.comp(N01 = 50, N02 = 5, r1 = 0.6, r2 = 0.6, K1 = 100, K2 = 100, alph = 1.5, bet = 1.3, timestep = 25)
+
+plot.growth2(mydata = comp.alt2, mytitle = "Alternate Stable States: Species 1")
+plot.growth2(mydata = comp.alt1, mytitle = "Alternate Stable States: Species 2")
+
+```
+
+###Part II: Predation
+
+In this exercise, you will model a predator-prey interaction using a discrete-time form of the Rosenzweig- MacArthur predator-prey model.
+
+$$\large N_{t+1} = N_{t} e^{r(\frac{K - N_{t}}{K}) - \frac{aP}{(1+ahN)}}$$
+$$\large P_{t+1} = P_{t} e^{\frac{baN_{t}}{(1+ahN_{t})}-d}$$
+In this model, $N_{t}$ and $P_{t}$ are prey and predator populations, respectively. Note that in absence of predator, prey population grows logistically (where parameters $r$ and $K$ are the same as in the logistic model). With predators present, preys suffer additional mortality from predation. Predator growth is a function of prey harvest rate, the conversion efficiency of captured prey into new predators, $b$, and a density independent per capita death rate, $d$. The per capita harvest rate of prey by predators is known as a functional response. The details of the functional response are given by $a$, the encounter rate of predators with prey, and $h$, the “handling time”, that is, time it takes each predator to handle a single prey item.
+
+\pagebreak
+
+In R, the equations will look something like:
+
+```{r, echo=T, eval=F}
+                  pred[i] <- Npred * exp((b*a*Nprey/(1+a*h*Nprey))-d)
+          prey[i] <- Nprey * exp(r*((K - Nprey)/K) - ((a * Npred)/(1+a*h*Nprey)))
+```
+
+Because the stability properties of the system depend on several parameters, changing any one of them can drastically alter the outcome. To make things easier, you are given most of the parameters. Play around with predator death rates $d$ to come up with various outcomes (Hint: how does $d$ affect the isoclines of the system?). Always start your prey population at 50 and your predator population at 5. Choose your $K$ from any number ranging from 95 to 105.
+
+
+Once our data is generated, our plots will look something like this:
+
+####Outcomes 5 and 6 (predator extinction)
+```{r, echo=F, fig.width=10, fig.show = "hold", out.width = "50%"}
+
+predprey1 <- pred.prey(r = 0.8, a = 1, h = 1.5, b = 0.05, d = 1)
+predprey2 <- pred.prey(r = 0.5, a = 0.5, h = 2, b = 3, d = 0.015)
+
+plot.growth2(mydata = predprey1, mytitle = "Predators go Extinct; Prey Goes to K")
+plot.growth2(mydata = predprey2, mytitle = "Predator Self-Annhilation")
+
+
+```
+
+
+####Outcomes 7 and 8 (limit cycles and damped oscillations)
+```{r, echo=F, fig.width=10, fig.show = "hold", out.width = "50%"}
+
+predprey3 <- pred.prey(d=0.08)
+predprey4 <- pred.prey(r = 1, a = 0.1, h = 1, b = 0.1, d = 0.0817)
+
+plot.growth2(mydata = predprey4, mytitle = "Predator-Prey Dynamics: Damped Oscillations")
+plot.growth2(mydata = predprey3, mytitle = "Predator-Prey Dynamics: Limit Cycles")
+```
+
+
+#### Plotting Species 1 and 2 Dynamics
+
+To visualize our data, we will use the following plotting function:
+
+```{r, echo=TRUE}
+
+plot.growth2 <- function(mydata, mytitle){
+  
+  p <- ggplot2::ggplot(mydata, aes(x=Generations, y=value, col=Group)) + 
+    geom_line() +
+    xlab('Generations') +
+    ylab('Population (N)') +
+    theme_minimal() +
+    ggtitle(label = mytitle)
+  
+  print(p)
+  
+}
+
+```
+
+
