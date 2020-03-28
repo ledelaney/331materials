@@ -47,7 +47,7 @@ discrete.exp <- function(N0, r, timestep){
   }
   
   p <- as.data.frame(p) %>%
-    add_column(., Generations=1:timestep) %>%
+    add_column(Generations=1:timestep) %>%
     setNames(., c("N", "Generations"))
   
 return(p)
@@ -63,7 +63,7 @@ dis.exp.growth2 <- discrete.exp(N0 = 10, r = -0.1, timestep = 25) %>%
 
 df <- full_join(dis.exp.growth, dis.exp.growth1, by="Generations") %>%
   full_join(dis.exp.growth2, by="Generations") %>%
-  melt(., id.vars="Generations") %>%
+  melt(id.vars="Generations") %>%
   setNames(., c("Generations", "Group", "value"))
 
 plot.growth2(mydata = df, mytitle = "Logisitic Population Growth")
@@ -72,7 +72,7 @@ dis.exp.growth3 <- discrete.exp(N0 = 10, r = 0.5, timestep = 25)
 dis.exp.growth4 <- discrete.exp(N0 = 10, r = 1, timestep = 25)
 
 
-plot.growth(mydata = dis.exp.growth, mytitle = "Discrete Exponential Growth")
+plot.growth(mydata = dis.exp.growth4, mytitle = "Discrete Exponential Growth")
 
 
 ##Logistic population growth
@@ -93,7 +93,7 @@ logistic.exp <- function(N0, r, timestep, K){
   }
   
   p <- as.data.frame(p) %>%
-    add_column(., Generations=1:timestep) %>%
+    add_column(Generations=1:timestep) %>%
     setNames(., c("N", "Generations"))
   
   return(p)
@@ -122,7 +122,7 @@ mod.logistic.exp <- function(N0, r, timestep, K, alph){
   }
   
   p <- as.data.frame(p) %>%
-    add_column(., Generations=1:timestep) %>%
+    add_column(Generations=1:timestep) %>%
     setNames(., c("N", "Generations"))
   
   return(p)
