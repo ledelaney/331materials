@@ -32,8 +32,8 @@ lot.vol.comp <- function(N01, N02, r1, r2, K1, K2, alph, bet, timestep){
   p <- cbind(p1, p2) %>%
     as.data.frame() %>%
     setNames(., c("Speces 1", "Species 2")) %>%
-    tibble::add_column(., Generations = 1:timestep) %>%
-    reshape::melt(., id.vars="Generations") %>%
+    tibble::add_column(Generations = 1:timestep) %>%
+    reshape::melt(id.vars="Generations") %>%
     setNames(., c("Generations", "Group", "value"))
   
   return(p)
@@ -61,8 +61,8 @@ pred.prey <- function(K=100, r=1, a=0.1, h=1, b=0.1, d, preypop=50, predpop=5, t
   p <- cbind(pred, prey) %>%
     as.data.frame() %>%
     setNames(., c("Predator", "Prey")) %>%
-    tibble::add_column(., Generations = 1:timestep) %>%
-    reshape::melt(., id.vars="Generations") %>%
+    tibble::add_column(Generations = 1:timestep) %>%
+    reshape::melt(id.vars="Generations") %>%
     setNames(., c("Generations", "Group", "value"))
   
   return(p)
